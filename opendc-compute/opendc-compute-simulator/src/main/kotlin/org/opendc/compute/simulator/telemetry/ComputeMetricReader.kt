@@ -33,6 +33,7 @@ import org.opendc.compute.simulator.host.SimHost
 import org.opendc.compute.simulator.service.ComputeService
 import org.opendc.compute.simulator.service.ServiceTask
 import org.opendc.compute.simulator.telemetry.table.battery.BatteryTableReaderImpl
+import org.opendc.compute.simulator.telemetry.table.cost.CostTableReaderImpl
 import org.opendc.compute.simulator.telemetry.table.host.HostTableReaderImpl
 import org.opendc.compute.simulator.telemetry.table.powerSource.PowerSourceTableReaderImpl
 import org.opendc.compute.simulator.telemetry.table.service.ServiceTableReaderImpl
@@ -75,6 +76,12 @@ public class ComputeMetricReader(
      */
     private val serviceTableReader =
         ServiceTableReaderImpl(
+            service,
+            startTime,
+        )
+
+    private val costTableReader =
+        CostTableReaderImpl(
             service,
             startTime,
         )
@@ -197,6 +204,11 @@ public class ComputeMetricReader(
             if (toMonitor[OutputFiles.SERVICE] == true) {
                 this.serviceTableReader.record(now)
                 this.monitor.record(this.serviceTableReader.copy())
+            }
+
+            if (toMonitor[OutputFiles.SERVICE] == true) { // TODO: Figure out how to add COST here
+                this.costTableReader.record(now)
+                this.monitor.record(this.costTableReader.copy())
             }
 
             if (printFrequency != null && loggCounter % printFrequency == 0) {
