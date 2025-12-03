@@ -50,6 +50,8 @@ public interface CostTableReader : Exportable {
     public val timestampAbsolute: Instant
 
     public val money: Double
+
+    public val energyUsage: Double
 }
 
 // Loads the default export fields for deserialization whenever this file is loaded.

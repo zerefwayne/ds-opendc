@@ -80,18 +80,17 @@ public class ComputeMetricReader(
             startTime,
         )
 
-    private val costTableReader =
-        CostTableReaderImpl(
-            service,
-            startTime,
-        )
-
     private var loggCounter = 0
 
     /**
      * Mapping from [SimHost] instances to [HostTableReaderImpl]
      */
     private val hostTableReaders = mutableMapOf<SimHost, HostTableReaderImpl>()
+
+    /**
+     * Mapping from [SimHost] instances to [CostTableReaderImpl]
+     */
+    private val costTableReaders = mutableMapOf<SimHost, CostTableReaderImpl>()
 
     /**
      * Mapping from [ServiceTask] instances to [TaskTableReaderImpl]
@@ -207,8 +206,18 @@ public class ComputeMetricReader(
             }
 
             if (toMonitor[OutputFiles.SERVICE] == true) { // TODO: Figure out how to add COST here
-                this.costTableReader.record(now)
-                this.monitor.record(this.costTableReader.copy())
+                for (host in this.service.hosts) {
+                    val reader =
+                        this.costTableReaders.computeIfAbsent(host) {
+                            CostTableReaderImpl(
+                                it,
+                                startTime,
+                            )
+                        }
+                    reader.record(now)
+                    this.monitor.record(reader.copy())
+                    reader.reset()
+                }
             }
 
             if (printFrequency != null && loggCounter % printFrequency == 0) {

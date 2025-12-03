@@ -34,13 +34,13 @@ import java.time.Instant
  * An aggregator for task metrics before they are reported.
  */
 public class CostTableReaderImpl(
-    private val service: ComputeService,
+    private val host: SimHost,
     private val startTime: Duration = Duration.ofMillis(0),
 ) : CostTableReader {
     override fun copy(): CostTableReader {
         val newTaskTable =
             CostTableReaderImpl(
-                service
+                host
             )
         newTaskTable.setValues(this)
 
@@ -50,6 +50,8 @@ public class CostTableReaderImpl(
     override fun setValues(table: CostTableReader) {
         _timestamp = table.timestamp
         _timestampAbsolute = table.timestampAbsolute
+        _money = table.money
+        _energyUsage = table.energyUsage
     }
 
     private var _timestamp = Instant.MIN
@@ -60,23 +62,36 @@ public class CostTableReaderImpl(
     override val timestampAbsolute: Instant
         get() = _timestampAbsolute
 
+    override val energyUsage: Double
+        get() = _energyUsage - previousEnergyUsage
+    private var _energyUsage = 0.0
+    private var previousEnergyUsage = 0.0
+
     private var _money = 0.0
     override val money: Double
         get() = _money
+
+    private fun computeCostFromEnergyUsage(energyUsage: Double): Double {
+        return energyUsage / 1000.0
+    }
 
     /**
      * Record the next cycle.
      */
     override fun record(now: Instant) {
+        val hostSysStats = host.getSystemStats()
+
         _timestamp = now
         _timestampAbsolute = now + startTime
-        _money = money
+        _money = computeCostFromEnergyUsage(hostSysStats.energyUsage)
+        _energyUsage = hostSysStats.energyUsage - previousEnergyUsage
     }
 
     /**
      * Finish the aggregation for this cycle.
      */
     override fun reset() {
+        previousEnergyUsage = _energyUsage
         _money = 0.0
     }
 }
